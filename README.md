@@ -4,85 +4,24 @@ This Next.js app provides a guest ordering experience for Rogers Cafe Qatar and 
 
 ## Files
 
-- `components/ui/menu-item-card.tsx`
-- `demo.tsx`
-- `lib/utils.ts`
-- `app/globals-theme-snippet.css`
+- `components/restaurant-app.tsx` (guest app, four tabs)
+- `components/ui/mac-os-menu-bar.tsx`, `components/ui/specials-linear-carousel.tsx`
+- `lib/menu.ts`, `lib/contact.ts`, `lib/gallery.ts`, `lib/reviews.ts`
+- `app/globals.css` (Tailwind theme source)
 
 ## Install dependencies
 
-Run:
+```bash
+npm install
+```
+
+## Run locally
 
 ```bash
-npm install lucide-react framer-motion clsx tailwind-merge
-```
-
-## Where to put the files
-
-Copy:
-
-```text
-components/ui/menu-item-card.tsx
-```
-
-to:
-
-```text
-YOUR_PROJECT/components/ui/menu-item-card.tsx
-```
-
-Copy:
-
-```text
-lib/utils.ts
-```
-
-to:
-
-```text
-YOUR_PROJECT/lib/utils.ts
-```
-
-You can put `demo.tsx` wherever you want to test the component, for example:
-
-```text
-app/page.tsx
-```
-
-or:
-
-```text
-components/demo.tsx
-```
-
-The file `app/globals-theme-snippet.css` contains the rich-blue dark shadcn color variables.
-Merge those variables into your existing `app/globals.css`.
-
-## If you use src/
-
-Use:
-
-```text
-src/components/ui/menu-item-card.tsx
-src/lib/utils.ts
-src/app/globals.css
-```
-
-## If you don't already have shadcn
-
-For a new Next.js app:
-
-```bash
-npx create-next-app@latest restaurant-app --typescript --tailwind --eslint --app
-cd restaurant-app
-npx shadcn@latest init
-npm install lucide-react framer-motion
-```
-
-## Component import
-
-```tsx
-import { MenuItemCard } from "@/components/ui/menu-item-card";
+npm run dev          # development server
+npm run typecheck    # tsc --noEmit
+npm run build        # production build
+npm start            # serve the production build
 ```
 
 Menu prototype prices are formatted in Qatari riyals.

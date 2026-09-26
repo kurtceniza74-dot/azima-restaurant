@@ -2,7 +2,7 @@
 
 ## Project
 
-This repository is a small Next.js app that demonstrates a reusable React/TypeScript menu card. Its main component is `components/ui/menu-item-card.tsx`; `demo.tsx` provides the menu data and layout, `lib/utils.ts` provides the `cn` helper, and `app/globals.css` is the active Tailwind stylesheet and theme source.
+This repository is a Next.js app for the Rogers Cafe Qatar guest site and staff console. `components/restaurant-app.tsx` is the guest app; `lib/menu.ts` supplies menu data, `lib/utils.ts` provides the `cn` helper, and `app/globals.css` is the active Tailwind stylesheet and theme source.
 
 ## Conventions
 

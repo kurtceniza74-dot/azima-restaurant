@@ -4,13 +4,12 @@ import React, {
   useEffect,
   useRef,
   useState,
-  createContext,
-  useContext,
+  useCallback,
+  useMemo,
 } from "react";
 
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import type { ImgHTMLAttributes } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface CarouselProps {
@@ -25,14 +24,6 @@ type Card = {
   content: React.ReactNode;
 };
 
-export const CarouselContext = createContext<{
-  onCardClose: (index: number) => void;
-  currentIndex: number;
-}>({
-  onCardClose: () => {},
-  currentIndex: 0,
-});
-
 export const Carousel = ({
   items,
   initialScroll = 0,
@@ -42,19 +33,24 @@ export const Carousel = ({
   const carouselRef = React.useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = React.useState(false);
   const [canScrollRight, setCanScrollRight] = React.useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const animationRef = useRef<number | null>(null);
-  // Duplicate items to create infinite effect
-  const loopedItems = [
-    ...items,
-    ...items.map((item) =>
-      React.cloneElement(item, {
-        key: (item.key ?? "") + "-duplicate",
-        index: items.indexOf(item) + items.length,
-      }),
-    ),
-  ];
+  // Whether the strip is on screen, so autoplay can stop when it is not.
+  const [isVisible, setIsVisible] = useState(false);
+  // Duplicate items to create infinite effect. Memoised so the strip is not
+  // rebuilt (spread + cloneElement + indexOf) on every single render.
+  const loopedItems = useMemo(
+    () => [
+      ...items,
+      ...items.map((item, itemIndex) =>
+        React.cloneElement(item, {
+          key: (item.key ?? "") + "-duplicate",
+          index: itemIndex + items.length,
+        }),
+      ),
+    ],
+    [items],
+  );
 
   useEffect(() => {
     if (carouselRef.current) {
@@ -63,9 +59,28 @@ export const Carousel = ({
     }
   }, [initialScroll]);
 
-  // Auto-scroll logic
+  // Keep the strip mounted-state in sync with the viewport so autoplay pauses
+  // while the carousel is scrolled out of sight.
   useEffect(() => {
-    if (!autoplay || isHovered) {
+    const node = carouselRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.05 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  // Auto-scroll logic. Halts when the strip is hovered or scrolled out of view
+  // so a looping carousel never keeps a background frame busy.
+  useEffect(() => {
+    if (!autoplay || isHovered || !isVisible) {
       if (animationRef.current) cancelAnimationFrame(animationRef.current!);
       return;
     }
@@ -91,15 +106,19 @@ export const Carousel = ({
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [autoplay, autoplaySpeed, isHovered]);
+  }, [autoplay, autoplaySpeed, isHovered, isVisible]);
 
-  const checkScrollability = () => {
+  const checkScrollability = useCallback(() => {
     if (carouselRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
-      setCanScrollLeft(scrollLeft > 0);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth);
+      // Compared against the previous value so the per-frame autoplay tick only
+      // commits a re-render when the arrow state actually flips.
+      const left = scrollLeft > 0;
+      const right = scrollLeft < scrollWidth - clientWidth;
+      setCanScrollLeft((was) => (was === left ? was : left));
+      setCanScrollRight((was) => (was === right ? was : right));
     }
-  };
+  }, []);
 
   const scrollLeft = () => {
     if (carouselRef.current) {
@@ -112,23 +131,6 @@ export const Carousel = ({
       const container = carouselRef.current;
       container.scrollTo({ left: container.scrollWidth, behavior: "smooth" });
     }
-  };
-
-  const handleCardClose = (index: number) => {
-    if (carouselRef.current) {
-      const cardWidth = isMobile() ? 230 : 320; // (md:w-80)
-      const gap = isMobile() ? 4 : 8;
-      const scrollPosition = (cardWidth + gap) * (index + 1);
-      carouselRef.current.scrollTo({
-        left: scrollPosition,
-        behavior: "smooth",
-      });
-      setCurrentIndex(index);
-    }
-  };
-
-  const isMobile = () => {
-    return window && window.innerWidth < 768;
   };
 
   // Drag to scroll logic
@@ -161,9 +163,6 @@ export const Carousel = ({
   };
 
   return (
-    <CarouselContext.Provider
-      value={{ onCardClose: handleCardClose, currentIndex }}
-    >
       <div
         className="relative w-full mx-auto px-4 md:px-8"
         onTouchStart={() => setIsHovered(true)}
@@ -234,7 +233,6 @@ export const Carousel = ({
           </button>
         </div>
       </div>
-    </CarouselContext.Provider>
   );
 };
 
@@ -272,37 +270,11 @@ export const Card = ({
       <img
         src={card.src}
         alt={card.title}
+        loading="lazy"
+        decoding="async"
         className="absolute inset-0 z-10 w-full h-full object-cover"
       />
     </motion.button>
-  );
-};
-
-export const BlurImage = ({
-  height,
-  width,
-  src,
-  className,
-  alt,
-  ...rest
-}: ImgHTMLAttributes<HTMLImageElement> & { src: string; alt: string }) => {
-  const [isLoading, setLoading] = useState(true);
-  return (
-    <img
-      className={cn(
-        "h-full w-full transition duration-300",
-        isLoading ? "blur-sm" : "blur-0",
-        className,
-      )}
-      onLoad={() => setLoading(false)}
-      src={src as string}
-      width={width}
-      height={height}
-      loading="lazy"
-      decoding="async"
-      alt={alt ? alt : "Background of a beautiful view"}
-      {...rest}
-    />
   );
 };
 

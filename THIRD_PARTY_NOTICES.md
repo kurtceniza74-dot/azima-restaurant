@@ -12,14 +12,13 @@ This project uses third-party packages, fonts, icons, images, and services. Owne
 | lucide-react | ISC | Icon set used across the site and admin console. |
 | clsx, tailwind-merge | MIT | Class-name utilities. |
 | tailwindcss, @tailwindcss/postcss, postcss | MIT | Styling pipeline. |
-| @fontsource-variable/inter | OFL-1.1 (font) / MIT (packaging) | Self-hosted Inter Variable served from this app; no Google Fonts request is made. |
 | typescript, @types/* | Apache-2.0 / MIT | Build-time only. |
 
 Run `npm audit` before handover; this audit found 0 vulnerabilities at the time of review.
 
 ## Images and brand assets
 
-- `public/brand/rogers-mark.svg`: a simple placeholder "R" mark created for this project. **Client must supply (or approve) the final logo** before launch; a legacy profile image from the previous brand also sits in `public/brand/` and should be deleted once the new mark is approved.
+- `public/brand/rogers-mark.svg`: a simple placeholder "R" mark created for this project. **Client must supply (or approve) the final logo** before launch. The legacy profile image from the previous brand has been removed from `public/brand/`.
 - Menu photos in `lib/menu.ts` load from Unsplash CDN URLs (`images.unsplash.com`). Unsplash content is subject to the Unsplash license/terms; hotlinking also depends on Unsplash availability. **Client should confirm** whether to keep Unsplash hotlinks or replace them with owned, locally hosted food photography before sale.
 - Gallery photos in `lib/gallery.ts` were supplied by the client from the cafe's own Google listing and load from Google's photo CDN (`lh3.googleusercontent.com`). **Client confirms it holds the rights** to these listing photos.
 - No other stock imagery is bundled.

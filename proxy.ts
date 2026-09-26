@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Redirect plain HTTP to HTTPS in production, but never redirect loopback,
-// health checks, API routes, or Next internals. Behind Render-style proxies,
-// trust X-Forwarded-Proto only when the proxy host itself reports loopback.
+// health checks, API routes, or Next internals. Behind the Railway reverse
+// proxy, trust X-Forwarded-Proto only when the proxy host itself reports loopback.
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 
 export function proxy(request: NextRequest) {

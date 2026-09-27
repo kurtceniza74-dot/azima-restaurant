@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -112,6 +112,10 @@ function Reveal({ children, className, delay = 0 }: { children: ReactNode; class
   );
 }
 
+// Shared by the desktop menu bar and the phone header so the page carries a
+// single passive scroll listener instead of one per header. The state updater
+// returns the previous value when the direction has not changed, so React
+// bails out of the re-render rather than re-rendering the tree on every tick.
 function useIsScrolledDown(threshold = 12) {
   const [isScrolledDown, setIsScrolledDown] = useState(false);
   const lastScrollY = useRef(0);
@@ -122,8 +126,11 @@ function useIsScrolledDown(threshold = 12) {
       const currentScrollY = window.scrollY;
       const delta = currentScrollY - lastScrollY.current;
       if (Math.abs(delta) < threshold) return;
-      setIsScrolledDown(delta > 0 && currentScrollY > 96);
       lastScrollY.current = currentScrollY;
+      setIsScrolledDown((previous) => {
+        const next = delta > 0 && currentScrollY > 96;
+        return next === previous ? previous : next;
+      });
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
@@ -209,6 +216,7 @@ function ProductRow({ item, quantity, onChange }: QuantityControlProps) {
         <img
           src={item.imageUrl}
           alt={item.name}
+          loading="lazy"
           decoding="async"
           className="size-full object-cover transition-transform duration-500 will-change-transform hover:scale-105"
         />
@@ -528,8 +536,7 @@ function CategoryTabs({ active, onSelect }: { active: MenuCategory; onSelect: (c
   );
 }
 
-function MobileHeader({ cartCount, hasOrder, onNavigate }: { cartCount: number; hasOrder: boolean; onNavigate: (tab: AppTab) => void }) {
-  const isScrolledDown = useIsScrolledDown();
+function MobileHeader({ cartCount, hasOrder, onNavigate, isScrolledDown }: { cartCount: number; hasOrder: boolean; onNavigate: (tab: AppTab) => void; isScrolledDown: boolean }) {
 
   return (
     <motion.header
@@ -1295,7 +1302,7 @@ function FloatingCart({
             <ul className="max-h-[min(42vh,17rem)] divide-y divide-[#ded6c9]/70 overflow-y-auto overscroll-contain px-4">
               {items.map((item) => (
                 <li key={item.id} className="flex items-center gap-3 py-3">
-                  <img src={item.imageUrl} alt="" decoding="async" className="size-11 shrink-0 rounded-xl object-cover" />
+                  <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className="size-11 shrink-0 rounded-xl object-cover" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13px] font-semibold text-[#322624]">{item.name}</p>
                     <p className="mt-0.5 text-[11px] text-[#81766f]">
@@ -1364,8 +1371,16 @@ export default function RestaurantApp() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
 
-  const cartCount = Object.values(quantities).reduce((total, quantity) => total + quantity, 0);
-  const cartTotal = menuItems.reduce((total, item) => total + item.price * (quantities[item.id] ?? 0), 0);
+  const isScrolledDown = useIsScrolledDown();
+
+  const cartCount = useMemo(
+    () => Object.values(quantities).reduce((total, quantity) => total + quantity, 0),
+    [quantities]
+  );
+  const cartTotal = useMemo(
+    () => menuItems.reduce((total, item) => total + item.price * (quantities[item.id] ?? 0), 0),
+    [quantities]
+  );
 
   useEffect(() => {
     setActiveOrder(readPendingOrder());
@@ -1473,8 +1488,8 @@ export default function RestaurantApp() {
 
   return (
     <div className="min-h-screen bg-[#f7f4ee] text-[#322624]">
-      <MacOSMenuBar className="hidden md:block" onNavigate={setActiveTab} />
-      <MobileHeader cartCount={cartCount} hasOrder={activeOrder !== null} onNavigate={setActiveTab} />
+      <MacOSMenuBar className="hidden md:block" onNavigate={setActiveTab} hidden={isScrolledDown} />
+      <MobileHeader cartCount={cartCount} hasOrder={activeOrder !== null} onNavigate={setActiveTab} isScrolledDown={isScrolledDown} />
 
       <main className="mx-auto max-w-7xl px-4 pb-36 pt-6 sm:px-6 md:pt-24 lg:px-10">
         <AnimatePresence mode="wait">

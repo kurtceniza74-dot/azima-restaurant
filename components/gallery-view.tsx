@@ -100,6 +100,7 @@ export default function GalleryView({ photos }: { photos: GalleryPhoto[] }) {
               <img
                 src={active.src}
                 alt={active.alt}
+                decoding="async"
                 className="max-h-[74vh] w-full rounded-2xl object-contain"
               />
               <figcaption className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-white/85">

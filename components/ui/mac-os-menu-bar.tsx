@@ -11,6 +11,8 @@ type AppTab = "home" | "menu" | "orders" | "visit";
 interface MacOSMenuBarProps {
   className?: string;
   onNavigate: (tab: AppTab) => void;
+  /** True while the page is scrolled past the hero; slides the bar out of view. */
+  hidden?: boolean;
 }
 
 const menus = [
@@ -30,7 +32,15 @@ const menus = [
   },
 ];
 
-export default function MacOSMenuBar({ className = "", onNavigate }: MacOSMenuBarProps) {
+// One formatter for the component's lifetime: building an Intl.DateTimeFormat
+// parses locale data, so the tick callback reuses this instead of re-creating it.
+const qatarTimeFormatter = new Intl.DateTimeFormat("en-QA", {
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "Asia/Qatar",
+});
+
+export default function MacOSMenuBar({ className = "", onNavigate, hidden = false }: MacOSMenuBarProps) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [qatarTime, setQatarTime] = useState("");
@@ -65,13 +75,7 @@ export default function MacOSMenuBar({ className = "", onNavigate }: MacOSMenuBa
 
   useEffect(() => {
     const updateTime = () => {
-      setQatarTime(
-        new Intl.DateTimeFormat("en-QA", {
-          hour: "numeric",
-          minute: "2-digit",
-          timeZone: "Asia/Qatar",
-        }).format(new Date())
-      );
+      setQatarTime(qatarTimeFormatter.format(new Date()));
     };
 
     updateTime();
@@ -104,7 +108,12 @@ export default function MacOSMenuBar({ className = "", onNavigate }: MacOSMenuBa
   }, [activeMenu, mobileOpen]);
 
   return (
-    <header className={`fixed inset-x-3 top-3 z-[110] mx-auto max-w-7xl md:inset-x-6 md:top-5 ${className}`}>
+    <motion.header
+      animate={{ y: hidden && !activeMenu ? "-140%" : "0%" }}
+      initial={false}
+      transition={{ type: "spring", stiffness: 320, damping: 34, mass: 0.9 }}
+      className={`fixed inset-x-3 top-3 z-[110] mx-auto max-w-7xl md:inset-x-6 md:top-5 ${className}`}
+    >
       <nav
         ref={navRef}
         aria-label="Main navigation"
@@ -116,7 +125,7 @@ export default function MacOSMenuBar({ className = "", onNavigate }: MacOSMenuBa
           className="flex min-w-0 items-center gap-2.5 text-left transition-opacity hover:opacity-90"
           aria-label={`${siteName} home`}
         >
-          <img src="/brand/rogers-mark.svg" alt="" className="size-9 shrink-0 object-contain" />
+          <img src="/brand/rogers-mark.svg" alt="" decoding="async" className="size-9 shrink-0 object-contain" />
           <span className="flex flex-col leading-none">
             <span className="text-xs font-semibold tracking-[0.2em]">{brandShortName}</span>
             <span className="mt-1 text-[9px] tracking-[0.14em] text-white/55">{countryLabel}</span>
@@ -283,6 +292,6 @@ export default function MacOSMenuBar({ className = "", onNavigate }: MacOSMenuBa
           )}
         </AnimatePresence>
       </nav>
-    </header>
+    </motion.header>
   );
 }
